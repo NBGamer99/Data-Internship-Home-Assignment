@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
-import os
-import pandas as pd
+from airflow.exceptions import AirflowNotFoundException
+
+from utils.DATAProcessing import extract_csv
 
 from utils.DBcreator import TableCreator
 from utils.DBQueries import TABLES_CREATION_QUERY
@@ -9,20 +10,17 @@ from airflow.decorators import dag, task
 from airflow.providers.sqlite.hooks.sqlite import SqliteHook
 
 
-project_path = os.getcwd()
-
 @task()
 def extract():
     """ This function is responsible for extracting data from the source.
     It reads data from 'jobs.csv' and saves the 'context' column data
     to 'staging/extracted' as a text file."""
-    print("Extracting data..." + project_path)
-    df = pd.read_csv("./source/jobs.csv")
-    for index, row in df.iterrows():
-        print(f"Extracting data... {index}")
-        context_str = str(row["context"])
-        with open(f"./staging/extracted/{index}.txt", "w") as file:
-            file.write(context_str)
+
+    try:
+        extract_csv("./source/jobs.csv")
+    except Exception as e:
+        raise AirflowNotFoundException(f"Error while extracting data: {e}")
+
 
 
 @task()
