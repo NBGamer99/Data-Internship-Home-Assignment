@@ -1,13 +1,11 @@
 from datetime import timedelta, datetime
+
 from airflow.exceptions import AirflowNotFoundException
-
-from utils.DATAProcessing import extract_csv
-
-from utils.DBcreator import TableCreator
-from utils.DBQueries import TABLES_CREATION_QUERY
-
 from airflow.decorators import dag, task
-from airflow.providers.sqlite.hooks.sqlite import SqliteHook
+
+from utils.DATAProcessing import extract_csv, load_to_db, transform_extracted_data
+from utils.DBManager import DatabaseManager
+from utils.DBQueries import TABLES_CREATION_QUERY
 
 
 @task()
@@ -22,7 +20,6 @@ def extract():
         raise AirflowNotFoundException(f"Error while extracting data: {e}")
 
 
-
 @task()
 def transform():
     """This function is responsible for transforming the extracted data.
@@ -30,12 +27,16 @@ def transform():
     cleans the job description, transforms the schema, and saves each item
     to 'staging/transformed' as a JSON file."""
 
+    transform_extracted_data()
+
 
 @task()
 def load():
     """This function is responsible for loading the transformed data into the database.
     It reads the transformed data from 'staging/transformed' and saves it to the SQLite database."""
-    sqlite_hook = SqliteHook(sqlite_conn_id='sqlite_default')
+    load_to_db()
+
+
 
 DAG_DEFAULT_ARGS = {
     "depends_on_past": False,
@@ -63,9 +64,8 @@ def etl_dag():
     to 'staging/transformed' as a JSON file.
     The load task reads the transformed data from 'staging/transformed' and saves it to the SQLite database."""
 
-    table_creator = TableCreator(TABLES_CREATION_QUERY)
-    create_tables = table_creator.create_tables()
-
+    database_manager = DatabaseManager(TABLES_CREATION_QUERY)
+    create_tables = database_manager.create_tables()
 
     create_tables >> extract() >> transform() >> load()
 
