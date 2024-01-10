@@ -33,6 +33,7 @@ function cleanup() {
 function initdb() {
     echo -e "\033[0;32m=============================== Init airflow  ===============================\033[0m"
     docker compose up airflow-init
+    runairflow
     echo -e "\033[0;32m=============================== Done init airflow ===============================\033[0m"
 }
 
@@ -47,13 +48,12 @@ function restart() {
     docker compose down
     docker compose up
     echo -e "\033[0;32m=============================== Done Restarting All Services ===============================\033[0m"
-
 }
 
 function rebuild() {
     echo -e "\033[0;32m=============================== Rebuilding services ===============================\033[0m"
     docker compose down
-    docker compose up --build
+    initdb
     echo -e "\033[0;32m=============================== Done rebuilding services ===============================\033[0m"
 }
 
